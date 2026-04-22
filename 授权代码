@@ -1,0 +1,197 @@
+<?php
+define('AUTH_SERVER', 'http://auth.886.baby/auth_server.php');//授权服务器地址
+define('AUTH_KEY', '5LqR6L+9572R57uc');//授权密钥Key
+
+function check_auth() {
+    $domain = str_replace('www.', '', $_SERVER['HTTP_HOST']);
+    $auth = json_decode(@file_get_contents(AUTH_SERVER.'?domain='.urlencode($domain)), true) ?: [];
+
+    return $auth['status'] === 'success'
+        && hash_equals(hash_hmac('sha256', $auth['token'], AUTH_KEY), $auth['signature'])
+        && ($data = json_decode(base64_decode($auth['token']), true))
+        && $data['domain'] === $domain 
+        && $data['expires'] > time();
+}
+
+if (!check_auth()) {
+    http_response_code(403);
+    exit('<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>授权验证失败 - 云智授权</title>
+    <style>
+        :root {
+            --primary-color: #2C3E50;
+            --text-color: #2C3E50;
+            --bg-color: #FFF5EA;
+            --border-color: #2C3E50;
+        }
+        
+        [data-theme="dark"] {
+            --primary-color: #5BF84F;
+            --text-color: #5BF84F;
+            --bg-color: #1A1A1A;
+            --border-color: #5BF84F;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .logo {
+            margin-bottom: 2rem;
+        }
+        
+        .logo svg {
+            width: 60px;
+            height: 60px;
+            fill: var(--text-color);
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+        
+        .time {
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-bottom: 3rem;
+            font-size: 0.9rem;
+        }
+        
+        .error-message {
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        
+        .contact-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.8rem 2.5rem;
+            background: transparent;
+            color: var(--text-color);
+            text-decoration: none;
+            border: 2px solid var(--border-color);
+            border-radius: 100px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .contact-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+        
+        footer {
+            position: absolute;
+            bottom: 2rem;
+            color: var(--text-color);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        footer a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .logo svg {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.236L19.09 8 12 11.764 4.91 8 12 4.236zM4 15.109V9.891l7 3.666v7.327l-7-3.666zm16 0l-7 3.666v-7.327l7-3.666v5.218z"/>
+        </svg>
+    </div>
+    
+    <div class="container">
+        <h1>云智授权验证失败</h1>
+        <div class="time" id="current-time"></div>
+        
+        <div class="error-message">
+            您的域名未经授权或授权已过期
+        </div>
+        //请填写你的客服QQ链接
+        <a href="客服QQ链接" class="contact-btn">联系客服</a>
+    </div>
+    
+    <footer>
+        2025 Powered by <a href="http://php.886.baby">@云智授权系统</a>
+    </footer>
+    
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false
+            };
+            document.getElementById("current-time").textContent = 
+                now.toLocaleString("zh-CN", options);
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        if (window.matchMedia && 
+            window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            document.documentElement.setAttribute("data-theme", "dark");
+        }
+        
+        window.matchMedia("(prefers-color-scheme: dark)")
+            .addEventListener("change", e => {
+                document.documentElement.setAttribute(
+                    "data-theme", 
+                    e.matches ? "dark" : "light"
+                );
+            });
+    </script>
+</body>
+</html>');
+}
+?>
